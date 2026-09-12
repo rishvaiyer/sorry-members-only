@@ -1,6 +1,7 @@
 """Human-gated security controls for individual AI agents."""
 
 from .approvals import approve_proposal, proposal_digest
+from .capabilities import CapabilityManager
 from .models import (
     Approval,
     Capability,
@@ -21,6 +22,7 @@ __all__ = [
     "Approval",
     "approve_proposal",
     "Capability",
+    "CapabilityManager",
     "Decision",
     "ExecutionStatus",
     "evaluate_proposal",
