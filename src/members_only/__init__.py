@@ -11,6 +11,8 @@ from .models import (
     SensitivityFinding,
     SensitivityLevel,
 )
+from .policy import evaluate_proposal
+from .sensitivity import inspect_proposal
 
 __version__ = "0.1.0"
 
@@ -19,6 +21,8 @@ __all__ = [
     "Capability",
     "Decision",
     "ExecutionStatus",
+    "evaluate_proposal",
+    "inspect_proposal",
     "PolicyDecision",
     "Proposal",
     "Receipt",
