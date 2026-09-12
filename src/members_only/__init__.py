@@ -15,6 +15,7 @@ from .models import (
 )
 from .policy import evaluate_proposal
 from .sensitivity import inspect_proposal
+from .storage import LocalStore
 
 __version__ = "0.1.0"
 
@@ -29,6 +30,7 @@ __all__ = [
     "inspect_proposal",
     "PolicyDecision",
     "Proposal",
+    "LocalStore",
     "proposal_digest",
     "Receipt",
     "SensitivityFinding",
