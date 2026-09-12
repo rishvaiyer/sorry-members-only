@@ -1,5 +1,6 @@
 """Human-gated security controls for individual AI agents."""
 
+from .approvals import approve_proposal, proposal_digest
 from .models import (
     Approval,
     Capability,
@@ -18,6 +19,7 @@ __version__ = "0.1.0"
 
 __all__ = [
     "Approval",
+    "approve_proposal",
     "Capability",
     "Decision",
     "ExecutionStatus",
@@ -25,6 +27,7 @@ __all__ = [
     "inspect_proposal",
     "PolicyDecision",
     "Proposal",
+    "proposal_digest",
     "Receipt",
     "SensitivityFinding",
     "SensitivityLevel",
