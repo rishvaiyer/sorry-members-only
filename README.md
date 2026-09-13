@@ -22,7 +22,7 @@ From the repository root:
 PYTHONPATH=src python3 -m members_only.cli demo
 ```
 
-The demo shows approval, capability issuance, local execution, receipt creation, and replay blocking. It makes no network requests.
+The demo shows approval, capability issuance, sandbox verification, brokered local execution, receipt creation, and replay blocking. It makes no network requests.
 
 ## Run the tests
 
@@ -32,4 +32,6 @@ PYTHONPATH=src python3 -m unittest discover -s tests -v
 
 ## Current scope
 
-This is a local Python MVP. Web MCP, real external integrations, and automatic external messages are not included.
+This is a local Python MVP. The sandbox security shield is a default-deny software control plane: requests need machine verification and either an exact member capability or an exact pre-approved rule before they reach a broker. The current demo has a local broker only.
+
+The shield has replaceable seams for workload and hardware attestation plus separate brokers for ingress, egress, updates, telemetry, models, and logs. Real OS-level isolation, TPM or enclave attestation, network enforcement, and external brokers are not included yet.

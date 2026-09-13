@@ -19,6 +19,22 @@ from .policy import evaluate_proposal
 from .pipeline import MembersOnlyPipeline
 from .receipts import TraceEvent, TraceRecorder, create_receipt
 from .sensitivity import inspect_proposal
+from .shield import (
+    ApprovedRule,
+    BrokerReceipt,
+    DenyAllBroker,
+    LocalBroker,
+    MachineAttestation,
+    MachineVerification,
+    SandboxShield,
+    ShieldChannel,
+    ShieldDenied,
+    ShieldReceipt,
+    ShieldRequest,
+    StaticMachineVerifier,
+    demo_attestation,
+    sign_request,
+)
 from .storage import LocalStore
 
 __version__ = "0.1.0"
@@ -47,5 +63,19 @@ __all__ = [
     "Receipt",
     "SensitivityFinding",
     "SensitivityLevel",
+    "ApprovedRule",
+    "BrokerReceipt",
+    "DenyAllBroker",
+    "LocalBroker",
+    "MachineAttestation",
+    "MachineVerification",
+    "SandboxShield",
+    "ShieldChannel",
+    "ShieldDenied",
+    "ShieldReceipt",
+    "ShieldRequest",
+    "StaticMachineVerifier",
+    "demo_attestation",
+    "sign_request",
     "__version__",
 ]

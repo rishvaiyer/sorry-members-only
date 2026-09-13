@@ -17,6 +17,7 @@ from .models import (
 from .policy import evaluate_proposal
 from .receipts import TraceRecorder, create_receipt
 from .sensitivity import inspect_proposal
+from .shield import MachineAttestation, SandboxShield, ShieldDenied
 from .storage import LocalStore
 
 
@@ -30,12 +31,19 @@ class MembersOnlyPipeline:
         store: LocalStore | None = None,
         capability_manager: CapabilityManager | None = None,
         trace: TraceRecorder | None = None,
+        shield: SandboxShield | None = None,
+        attestation: MachineAttestation | None = None,
     ) -> None:
         self.adapter = adapter or LocalActionAdapter()
         self.store = store or LocalStore()
         self.capability_manager = capability_manager or CapabilityManager(store=self.store)
         self.trace = trace or TraceRecorder()
-        self.execution_gate = ExecutionGate(self.capability_manager, self.adapter)
+        self.execution_gate = ExecutionGate(
+            self.capability_manager,
+            self.adapter,
+            shield=shield,
+            attestation=attestation,
+        )
 
     def evaluate(self, proposal: Proposal) -> PolicyDecision:
         """Inspect a proposal and record the resulting policy decision."""
@@ -107,6 +115,21 @@ class MembersOnlyPipeline:
 
         try:
             result = self.execution_gate.execute(proposal, capability)
+        except ShieldDenied as error:
+            self.trace.record(
+                "sandbox_blocked",
+                proposal.proposal_id,
+                {
+                    "reason": error.receipt.reason,
+                    "machine_verified": error.receipt.machine_verified,
+                },
+            )
+            receipt = create_receipt(
+                proposal,
+                decision=Decision.DENY,
+                status=ExecutionStatus.DENIED,
+                summary="Execution blocked by the sandbox security shield.",
+            )
         except PermissionError:
             self.trace.record(
                 "execution_blocked",
@@ -132,6 +155,17 @@ class MembersOnlyPipeline:
                 summary="The action adapter rejected the action.",
             )
         else:
+            if self.execution_gate.last_shield_receipt is not None:
+                shield_receipt = self.execution_gate.last_shield_receipt
+                self.trace.record(
+                    "sandbox_authorized",
+                    proposal.proposal_id,
+                    {
+                        "approval_source": shield_receipt.approval_source,
+                        "broker": shield_receipt.broker,
+                        "channel": "egress",
+                    },
+                )
             self.trace.record(
                 "action_executed",
                 proposal.proposal_id,

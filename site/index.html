@@ -24,6 +24,7 @@
           <a class="nav-link" href="#topology" data-nav-target="topology">Architecture</a>
           <a class="nav-link" href="#request-flow" data-nav-target="request-flow">Proposal flow</a>
           <a class="nav-link" href="#authority" data-nav-target="authority">Security model</a>
+          <a class="nav-link" href="#shield" data-nav-target="shield">Sandbox shield</a>
           <a class="nav-link" href="#receipts" data-nav-target="receipts">Traces and receipts</a>
           <a class="nav-link" href="#demo" data-nav-target="demo">Local demo</a>
           <a class="nav-link" href="#boundaries" data-nav-target="boundaries">Threat model</a>
@@ -64,6 +65,7 @@
               <tbody>
                 <tr><td>Agent caller</td><td>Suggest an action with typed context. It does not receive authority from its own output.</td><td><code>Proposal</code></td></tr>
                 <tr><td>Security layer</td><td>Inspect findings, apply policy, bind approval, and issue a capability.</td><td><code>pipeline.py</code></td></tr>
+                <tr><td>Sandbox shield</td><td>Verify workload, hardware, signature, route, approval, and broker before a request crosses the seam.</td><td><code>shield.py</code></td></tr>
                 <tr><td>Local adapter</td><td>Run only the supported synthetic action after the final gate.</td><td><code>adapters/local.py</code></td></tr>
                 <tr><td>Persistence</td><td>Keep approvals, capabilities, redemption state, and receipts in local SQLite.</td><td><code>storage.py</code></td></tr>
                 <tr><td>Trace recorder</td><td>Write safe state transitions without raw payload-like fields.</td><td><code>receipts.py</code></td></tr>
@@ -100,6 +102,18 @@
             </table>
           </section>
 
+          <section class="doc-section" id="shield">
+            <h2>Sandbox security shield</h2>
+            <p>The shield sits outside the application workflow. It makes the local MVP default-deny and requires both machine verification and explicit approval before a request reaches a broker.</p>
+            <div class="overview-table" role="list" aria-label="Sandbox security shield">
+              <div role="listitem"><strong>Machine check</strong><span>→</span><p>Verify trusted workload, hardware identity, and a signature bound to the exact request.</p></div>
+              <div role="listitem"><strong>Approval check</strong><span>→</span><p>Accept an exact member capability or an exact pre-approved rule. Unknown requests stop.</p></div>
+              <div role="listitem"><strong>Broker route</strong><span>→</span><p>Forward only through the configured broker for the request channel and destination.</p></div>
+              <div role="listitem"><strong>Default deny</strong><span>→</span><p>Unconfigured ingress, egress, updates, telemetry, model, and log routes are refused and recorded.</p></div>
+            </div>
+            <div class="invariant"><strong>Seam</strong><span>Python provides the control-plane interface. A later adapter can replace static verification with TPM, enclave, or orchestrator-backed attestation.</span></div>
+          </section>
+
           <section class="doc-section" id="receipts">
             <h2>Traces and receipts</h2>
             <p>The demo emits a trace for each important state change and creates a receipt for the final outcome. The record is designed to answer, “What happened?” without becoming a second copy of the sensitive content.</p>
@@ -110,6 +124,13 @@
   "proposal_id": "prop_demo_001",
   "finding_types": ["private_message"],
   "raw_payload": "omitted"
+}
+
+{
+  "event": "sandbox_authorized",
+  "proposal_id": "prop_demo_001",
+  "approval_source": "member_capability",
+  "broker": "LocalBroker"
 }
 
 {
@@ -151,7 +172,7 @@
 
           <section class="doc-section" id="demo">
             <h2>Local demo</h2>
-            <p>The repository includes a synthetic end-to-end run. It shows member approval, capability issuance, local execution, receipt creation, and replay blocking without making network requests.</p>
+            <p>The repository includes a synthetic end-to-end run. It shows member approval, capability issuance, sandbox verification, brokered local execution, receipt creation, and replay blocking without making network requests.</p>
             <div class="command"><span>$</span> PYTHONPATH=src python3 -m members_only.cli demo</div>
             <div class="demo-result"><code>first_execution=succeeded</code><code>replay_attempt=denied</code><code>network_requests=0</code></div>
             <p class="section-note">Tests: <code>PYTHONPATH=src python3 -m unittest discover -s tests -v</code></p>
@@ -164,6 +185,7 @@
               <li>Web MCP is intentionally excluded from this project scope.</li>
               <li>Detectors are signals. They cannot guarantee that every sensitive value is found.</li>
               <li>The member remains responsible for approving high-impact actions.</li>
+              <li>The current shield is a software control plane. It does not claim OS-level network containment or hardware attestation yet.</li>
               <li>This documentation describes implementation evidence, not user adoption or commercial scale.</li>
             </ul>
           </section>
@@ -176,6 +198,7 @@
         <a href="#topology">Runtime topology</a>
         <a href="#request-flow">Proposal flow</a>
         <a href="#authority">Authority model</a>
+        <a href="#shield">Sandbox shield</a>
         <a href="#receipts">Traces and receipts</a>
         <a href="#persistence">Persistence</a>
         <a href="#delivery">Build and delivery</a>

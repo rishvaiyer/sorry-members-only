@@ -11,6 +11,7 @@ from .adapters import LocalActionAdapter
 from .models import Proposal
 from .pipeline import MembersOnlyPipeline
 from .receipts import TraceRecorder
+from .shield import LocalBroker, SandboxShield, demo_attestation
 from .storage import LocalStore
 
 
@@ -26,9 +27,17 @@ def run_demo(output: TextIO) -> int:
     )
     trace = TraceRecorder()
     adapter = LocalActionAdapter()
+    verifier, attestation = demo_attestation(proposal)
+    shield = SandboxShield(verifier=verifier, broker=LocalBroker())
 
     with LocalStore() as store:
-        pipeline = MembersOnlyPipeline(adapter=adapter, store=store, trace=trace)
+        pipeline = MembersOnlyPipeline(
+            adapter=adapter,
+            store=store,
+            trace=trace,
+            shield=shield,
+            attestation=attestation,
+        )
         decision = pipeline.evaluate(proposal)
         capability = pipeline.approve(proposal, decision, member_id="member-1")
         first_receipt = pipeline.execute(proposal, decision, capability)
