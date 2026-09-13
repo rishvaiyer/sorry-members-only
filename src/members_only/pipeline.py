@@ -161,6 +161,7 @@ class MembersOnlyPipeline:
                     "sandbox_authorized",
                     proposal.proposal_id,
                     {
+                        "machine_verified": shield_receipt.machine_verified,
                         "approval_source": shield_receipt.approval_source,
                         "broker": shield_receipt.broker,
                         "channel": "egress",

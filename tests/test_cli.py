@@ -19,6 +19,10 @@ class CliDemoTests(unittest.TestCase):
         self.assertIn("approval_recorded", text)
         self.assertIn("action_executed", text)
         self.assertIn("execution_blocked", text)
+        self.assertIn("Entering proposal intake check", text)
+        self.assertIn("Sensitivity check completed", text)
+        self.assertIn("Sandbox shield passed", text)
+        self.assertIn("Entering replay test", text)
         self.assertIn('"status": "denied"', text)
         self.assertNotIn("member-private-content", text)
 

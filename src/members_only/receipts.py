@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 import json
@@ -70,8 +71,9 @@ class TraceEvent:
 class TraceRecorder:
     """Collect structured trace events for tests, demos, or later log sinks."""
 
-    def __init__(self) -> None:
+    def __init__(self, listener: Callable[[TraceEvent], None] | None = None) -> None:
         self._events: list[TraceEvent] = []
+        self._listener = listener
 
     @property
     def events(self) -> tuple[TraceEvent, ...]:
@@ -85,6 +87,8 @@ class TraceRecorder:
     ) -> TraceEvent:
         trace_event = TraceEvent(event, proposal_id, details or {})
         self._events.append(trace_event)
+        if self._listener is not None:
+            self._listener(trace_event)
         return trace_event
 
     def to_jsonl(self) -> str:

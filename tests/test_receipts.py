@@ -5,6 +5,19 @@ from members_only.models import Decision, ExecutionStatus, Proposal
 
 
 class ReceiptAndTraceTests(unittest.TestCase):
+    def test_trace_listener_receives_each_safe_event(self):
+        observed = []
+        recorder = TraceRecorder(listener=observed.append)
+
+        event = recorder.record(
+            "proposal_received",
+            "proposal-1",
+            {"action": "send_message"},
+        )
+
+        self.assertEqual(observed, [event])
+        self.assertEqual(recorder.events, (event,))
+
     def test_trace_contains_safe_metadata_without_payload_text(self):
         secret = "private-message-content"
         proposal = Proposal(
