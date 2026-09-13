@@ -4,12 +4,42 @@ from members_only import (
     LocalActionAdapter,
     LocalStore,
     MembersOnlyPipeline,
+    SandboxCommandAdapter,
+    SandboxResult,
     TraceRecorder,
 )
 from members_only.models import Decision, ExecutionStatus, Proposal
 
 
+class UnavailableRuntime:
+    def run(self, _command, *, timeout_seconds=10.0):
+        return SandboxResult(False, None, "runtime_unavailable")
+
+
 class MembersOnlyPipelineTests(unittest.TestCase):
+    def test_pipeline_records_hard_runtime_denial(self):
+        proposal = Proposal(
+            member_id="member-1",
+            agent_id="agent-1",
+            action="send_message",
+            destination="local:test-inbox",
+            payload={"body": "Keep this private."},
+        )
+        trace = TraceRecorder()
+        adapter = SandboxCommandAdapter(
+            runtime=UnavailableRuntime(),
+            command=("worker", "run"),
+        )
+
+        with LocalStore() as store:
+            pipeline = MembersOnlyPipeline(adapter=adapter, store=store, trace=trace)
+            decision = pipeline.evaluate(proposal)
+            capability = pipeline.approve(proposal, decision, member_id=proposal.member_id)
+            receipt = pipeline.execute(proposal, decision, capability)
+
+        self.assertEqual(receipt.status, ExecutionStatus.DENIED)
+        self.assertIn("sandbox_runtime_blocked", [event.event for event in trace.events])
+
     def test_pipeline_records_trace_and_persists_successful_receipt(self):
         secret = "Please keep this private."
         proposal = Proposal(

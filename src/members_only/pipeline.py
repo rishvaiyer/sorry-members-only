@@ -16,6 +16,7 @@ from .models import (
 )
 from .policy import evaluate_proposal
 from .receipts import TraceRecorder, create_receipt
+from .runtime import SandboxRuntimeDenied
 from .sensitivity import inspect_proposal
 from .shield import MachineAttestation, SandboxShield, ShieldDenied
 from .storage import LocalStore
@@ -115,6 +116,22 @@ class MembersOnlyPipeline:
 
         try:
             result = self.execution_gate.execute(proposal, capability)
+        except SandboxRuntimeDenied as error:
+            self.trace.record(
+                "sandbox_runtime_blocked",
+                proposal.proposal_id,
+                {
+                    "reason": error.result.reason,
+                    "exit_code": error.result.exit_code,
+                    "timed_out": error.result.timed_out,
+                },
+            )
+            receipt = create_receipt(
+                proposal,
+                decision=Decision.DENY,
+                status=ExecutionStatus.DENIED,
+                summary="Execution blocked by the hard sandbox runtime.",
+            )
         except ShieldDenied as error:
             self.trace.record(
                 "sandbox_blocked",

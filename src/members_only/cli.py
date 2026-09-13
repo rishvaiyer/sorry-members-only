@@ -9,10 +9,11 @@ import json
 import sys
 from typing import Sequence, TextIO
 
-from .adapters import LocalActionAdapter
+from .adapters import LocalActionAdapter, SandboxCommandAdapter
 from .models import Capability, PolicyDecision, Proposal
 from .pipeline import MembersOnlyPipeline
 from .receipts import TraceEvent, TraceRecorder
+from .runtime import DockerSandbox
 from .shield import (
     DenyAllBroker,
     LocalBroker,
@@ -43,6 +44,10 @@ def _print_trace_event(event: TraceEvent, output: TextIO) -> None:
         "sandbox_blocked": (
             "Sandbox shield blocked the request: "
             f"{details.get('reason', 'request was denied')}."
+        ),
+        "sandbox_runtime_blocked": (
+            "Hard sandbox runtime blocked the worker: "
+            f"{details.get('reason', 'runtime denied the command')}."
         ),
         "action_executed": (
             "Entering local action execution: "
@@ -289,12 +294,50 @@ def run_attack_demo(output: TextIO) -> int:
     return 0 if blocked_count == scenario_count else 1
 
 
+def run_sandbox_demo(output: TextIO) -> int:
+    """Run an action through the optional Docker enforcement layer."""
+
+    proposal = _demo_proposal()
+    print("Members Only hard sandbox demo", file=output)
+    print(
+        "Configured: no network, read-only root, no host mounts, dropped capabilities, "
+        "no-new-privileges, pull disabled.",
+        file=output,
+    )
+    print("The image must already exist locally; a missing runtime fails closed.", file=output)
+    print(file=output)
+
+    trace = TraceRecorder(listener=lambda event: _print_trace_event(event, output))
+    verifier, attestation = demo_attestation(proposal)
+    adapter = SandboxCommandAdapter(
+        runtime=DockerSandbox(image="python:3.12-alpine"),
+        command=("python", "-c", "print('sandbox worker completed')"),
+    )
+    shield = SandboxShield(verifier=verifier, broker=LocalBroker())
+
+    with LocalStore() as store:
+        pipeline = MembersOnlyPipeline(
+            adapter=adapter,
+            store=store,
+            trace=trace,
+            shield=shield,
+            attestation=attestation,
+        )
+        decision = pipeline.evaluate(proposal)
+        capability = pipeline.approve(proposal, decision, member_id=proposal.member_id)
+        receipt = pipeline.execute(proposal, decision, capability)
+
+    print(file=output)
+    print(f"sandbox_execution={receipt.status.value}", file=output)
+    return 0
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="members-only")
     parser.add_argument(
         "command",
         nargs="?",
-        choices=("demo", "attack-demo"),
+        choices=("demo", "attack-demo", "sandbox-demo"),
         default="demo",
     )
     args = parser.parse_args(argv)
@@ -303,6 +346,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         return run_demo(sys.stdout)
     if args.command == "attack-demo":
         return run_attack_demo(sys.stdout)
+    if args.command == "sandbox-demo":
+        return run_sandbox_demo(sys.stdout)
     return 0
 
 

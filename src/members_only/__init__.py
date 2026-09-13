@@ -1,7 +1,7 @@
 """Human-gated security controls for individual AI agents."""
 
 from .approvals import approve_proposal, proposal_digest
-from .adapters import ActionAdapter, ActionResult, LocalActionAdapter
+from .adapters import ActionAdapter, ActionResult, LocalActionAdapter, SandboxCommandAdapter
 from .capabilities import CapabilityManager
 from .execution import ExecutionGate
 from .models import (
@@ -18,6 +18,12 @@ from .models import (
 from .policy import evaluate_proposal
 from .pipeline import MembersOnlyPipeline
 from .receipts import TraceEvent, TraceRecorder, create_receipt
+from .runtime import (
+    DockerSandbox,
+    SandboxResult,
+    SandboxRuntime,
+    SandboxRuntimeDenied,
+)
 from .sensitivity import inspect_proposal
 from .shield import (
     ApprovedRule,
@@ -58,6 +64,7 @@ __all__ = [
     "Proposal",
     "LocalStore",
     "LocalActionAdapter",
+    "SandboxCommandAdapter",
     "MembersOnlyPipeline",
     "proposal_digest",
     "Receipt",
@@ -77,5 +84,9 @@ __all__ = [
     "StaticMachineVerifier",
     "demo_attestation",
     "sign_request",
+    "DockerSandbox",
+    "SandboxResult",
+    "SandboxRuntime",
+    "SandboxRuntimeDenied",
     "__version__",
 ]

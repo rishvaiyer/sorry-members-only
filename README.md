@@ -32,6 +32,14 @@ PYTHONPATH=src python3 -m members_only.cli attack-demo
 
 That demo shows tampered content, invalid machine attestation, broker denial, expired capability, and capability replay being blocked.
 
+To exercise the optional hard runtime:
+
+```bash
+PYTHONPATH=src python3 -m members_only.cli sandbox-demo
+```
+
+This routes the worker through Docker with no network, a read-only root, no host mounts, dropped Linux capabilities, no-new-privileges, resource limits, and image pulling disabled. The image must already be available locally. If Docker or the image is unavailable, the action is denied rather than run outside the sandbox.
+
 ## Run the tests
 
 ```bash
@@ -42,4 +50,4 @@ PYTHONPATH=src python3 -m unittest discover -s tests -v
 
 This is a local Python MVP. The sandbox security shield is a default-deny software control plane: requests need machine verification and either an exact member capability or an exact pre-approved rule before they reach a broker. The current demo has a local broker only.
 
-The shield has replaceable seams for workload and hardware attestation plus separate brokers for ingress, egress, updates, telemetry, models, and logs. Real OS-level isolation, TPM or enclave attestation, network enforcement, and external brokers are not included yet.
+The shield has replaceable seams for workload and hardware attestation plus separate brokers for ingress, egress, updates, telemetry, models, and logs. The Docker runtime is an optional local enforcement adapter; TPM or enclave attestation, a production broker, and host-level enforcement outside Docker are not included yet.
