@@ -6,13 +6,15 @@ from datetime import datetime, timedelta, timezone
 
 from .approvals import proposal_digest
 from .models import Approval, Capability, Proposal
+from .storage import LocalStore
 
 
 class CapabilityManager:
-    """Issue and redeem in-memory capabilities for the current process."""
+    """Issue and redeem capabilities with optional persistent replay state."""
 
-    def __init__(self) -> None:
+    def __init__(self, *, store: LocalStore | None = None) -> None:
         self._redeemed_ids: set[str] = set()
+        self._store = store
 
     def issue(
         self,
@@ -43,7 +45,7 @@ class CapabilityManager:
     def redeem(self, capability: Capability, proposal: Proposal) -> None:
         """Consume a capability if it still matches and has not expired."""
 
-        if capability.capability_id in self._redeemed_ids:
+        if self._store is None and capability.capability_id in self._redeemed_ids:
             raise PermissionError("capability has already been redeemed")
         if datetime.now(timezone.utc) >= capability.expires_at:
             raise PermissionError("capability has expired")
@@ -55,4 +57,10 @@ class CapabilityManager:
         ):
             raise PermissionError("capability does not match the proposal")
 
-        self._redeemed_ids.add(capability.capability_id)
+        if self._store is None:
+            self._redeemed_ids.add(capability.capability_id)
+        elif not self._store.mark_capability_redeemed(
+            capability.capability_id,
+            datetime.now(timezone.utc),
+        ):
+            raise PermissionError("capability has already been redeemed or was not persisted")

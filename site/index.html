@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Members Only documentation, a local security boundary for personal AI agents." />
+    <title>Architecture | Members Only documentation</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="wordmark" href="#overview" aria-label="Members Only documentation home">
+        <strong>Members Only</strong><span>Documentation</span>
+      </a>
+      <span class="header-note">Local agent security</span>
+    </header>
+
+    <div class="docs-layout">
+      <aside class="project-nav" aria-label="Project documentation">
+        <p class="nav-kicker">Documentation</p>
+        <p class="project-name">MEMBERS ONLY</p>
+        <nav>
+          <a class="nav-link is-active" href="#overview" data-nav-target="overview">Overview</a>
+          <a class="nav-link" href="#topology" data-nav-target="topology">Architecture</a>
+          <a class="nav-link" href="#request-flow" data-nav-target="request-flow">Proposal flow</a>
+          <a class="nav-link" href="#authority" data-nav-target="authority">Security model</a>
+          <a class="nav-link" href="#receipts" data-nav-target="receipts">Traces and receipts</a>
+          <a class="nav-link" href="#demo" data-nav-target="demo">Local demo</a>
+          <a class="nav-link" href="#boundaries" data-nav-target="boundaries">Threat model</a>
+        </nav>
+      </aside>
+
+      <main class="main-content">
+        <article>
+          <header class="page-header" id="overview">
+            <h1>Architecture</h1>
+            <p class="page-subtitle">Proposal topology, member authority, sensitivity checks, and safe execution boundaries.</p>
+          </header>
+
+          <dl class="metadata">
+            <div><dt>Status</dt><dd>Local MVP</dd></div>
+            <div><dt>Baseline</dt><dd><code>Python foundation</code></dd></div>
+            <div><dt>Primary source</dt><dd><code>src/members_only</code></dd></div>
+          </dl>
+
+          <section class="doc-section" id="system-overview">
+            <h2>System overview</h2>
+            <p>Members Only is a local Python boundary in which an AI agent can propose work, but the member remains the authority for sensitive actions. The system checks the proposal before execution, requires approval where needed, and records a safe result without copying the private payload into the trace.</p>
+            <div class="overview-table" role="list" aria-label="System overview">
+              <div role="listitem"><strong>Agent proposal</strong><span>→</span><p>Structured action, arguments, destination, and member context</p></div>
+              <div role="listitem"><strong>Sensitivity inspector</strong><span>→</span><p>Credential, personal, private-message, and destination findings</p></div>
+              <div role="listitem"><strong>Policy gate</strong><span>→</span><p>Allow, requires approval, or deny</p></div>
+              <div role="listitem"><strong>Member approval</strong><span>→</span><p>Decision bound to the exact proposal digest</p></div>
+              <div role="listitem"><strong>Capability manager</strong><span>→</span><p>Short-lived, one-use permission for the approved proposal</p></div>
+              <div role="listitem"><strong>Local adapter</strong><span>→</span><p>Synthetic note and message actions, with external destinations rejected</p></div>
+              <div role="listitem"><strong>Trace and receipt</strong><span>→</span><p>Safe evidence of the decision and execution outcome</p></div>
+            </div>
+          </section>
+
+          <section class="doc-section" id="topology">
+            <h2>Runtime topology</h2>
+            <table>
+              <thead><tr><th>Runtime</th><th>Responsibilities</th><th>Primary implementation</th></tr></thead>
+              <tbody>
+                <tr><td>Agent caller</td><td>Suggest an action with typed context. It does not receive authority from its own output.</td><td><code>Proposal</code></td></tr>
+                <tr><td>Security layer</td><td>Inspect findings, apply policy, bind approval, and issue a capability.</td><td><code>pipeline.py</code></td></tr>
+                <tr><td>Local adapter</td><td>Run only the supported synthetic action after the final gate.</td><td><code>adapters/local.py</code></td></tr>
+                <tr><td>Persistence</td><td>Keep approvals, capabilities, redemption state, and receipts in local SQLite.</td><td><code>storage.py</code></td></tr>
+                <tr><td>Trace recorder</td><td>Write safe state transitions without raw payload-like fields.</td><td><code>receipts.py</code></td></tr>
+              </tbody>
+            </table>
+            <p class="section-note">The MVP is local and synthetic. It has no request-time network dependency and does not connect to Web MCP or external services.</p>
+          </section>
+
+          <section class="doc-section" id="request-flow">
+            <h2>Authoritative proposal flow</h2>
+            <div class="numbered-flow">
+              <div><b>01</b><p><strong>Intent</strong> An agent submits a typed proposal naming the action, arguments, and destination.</p></div>
+              <div><b>02</b><p><strong>Inspection</strong> The sensitivity layer returns finding types and locations without echoing secret values.</p></div>
+              <div><b>03</b><p><strong>Decision</strong> Policy maps the findings and destination to allow, requires approval, or deny.</p></div>
+              <div><b>04</b><p><strong>Approval</strong> The member approves the exact proposal. The approval stores a stable SHA-256 proposal digest.</p></div>
+              <div><b>05</b><p><strong>Authorization</strong> A capability is issued and consumed immediately before the local adapter runs.</p></div>
+              <div><b>06</b><p><strong>Receipt</strong> The result is recorded as a safe trace and receipt. A replay is denied.</p></div>
+            </div>
+            <div class="invariant"><strong>Design invariant</strong><span>Agent text, UI state, or a copied capability never substitutes for policy and member authority.</span></div>
+          </section>
+
+          <section class="doc-section" id="authority">
+            <h2>Authority and privacy model</h2>
+            <table>
+              <thead><tr><th>Concern</th><th>Control</th><th>Failure behavior</th></tr></thead>
+              <tbody>
+                <tr><td>Credential exposure</td><td>Detect credential fields and secret-like values before policy.</td><td>Deny before execution</td></tr>
+                <tr><td>Personal or private data</td><td>Classify sensitive fields and private message bodies without logging their contents.</td><td>Require member approval</td></tr>
+                <tr><td>External destination</td><td>Include destination risk in the policy decision and adapter boundary.</td><td>Require approval or reject in local MVP</td></tr>
+                <tr><td>Changed proposal</td><td>Bind approval to a stable proposal digest.</td><td>Approval no longer matches</td></tr>
+                <tr><td>Capability replay</td><td>Use expiry plus persistent one-use redemption state.</td><td>Block the second attempt</td></tr>
+                <tr><td>Trace leakage</td><td>Reject payload-like trace detail keys and record safe metadata only.</td><td>Refuse unsafe trace data</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="doc-section" id="receipts">
+            <h2>Traces and receipts</h2>
+            <p>The demo emits a trace for each important state change and creates a receipt for the final outcome. The record is designed to answer, “What happened?” without becoming a second copy of the sensitive content.</p>
+            <div class="code-window">
+              <div class="code-window-header"><span><i></i> trace.jsonl</span><span>safe fields only</span></div>
+              <pre><code>{
+  "event": "sensitivity_checked",
+  "proposal_id": "prop_demo_001",
+  "finding_types": ["private_message"],
+  "raw_payload": "omitted"
+}
+
+{
+  "event": "execution_blocked",
+  "proposal_id": "prop_demo_001",
+  "reason": "capability_already_redeemed"
+}</code></pre>
+            </div>
+            <div class="evidence-grid">
+              <div><strong>Trace</strong><p>State transition, actor-safe identifiers, finding types, and decision reason.</p></div>
+              <div><strong>Receipt</strong><p>Action identity, execution result, and a bounded failure reason.</p></div>
+              <div><strong>Omitted</strong><p>Raw credentials, private message bodies, and payload-like detail.</p></div>
+            </div>
+          </section>
+
+          <section class="doc-section" id="persistence">
+            <h2>Persistence</h2>
+            <p>SQLite gives the local MVP durable security state across process restarts. The store keeps the decision record separate from the sensitive proposal content used to make it.</p>
+            <table>
+              <thead><tr><th>Data class</th><th>Storage</th><th>Continuity</th></tr></thead>
+              <tbody>
+                <tr><td>Approvals</td><td>SQLite</td><td>Proposal digest remains auditable</td></tr>
+                <tr><td>Capabilities</td><td>SQLite plus expiry checks</td><td>Redemption state survives restart</td></tr>
+                <tr><td>Receipts</td><td>SQLite</td><td>Final outcome remains queryable</td></tr>
+                <tr><td>Trace stream</td><td>JSONL recorder</td><td>Safe event sequence can be reviewed locally</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="doc-section" id="delivery">
+            <h2>Build and delivery</h2>
+            <div class="numbered-flow compact-flow">
+              <div><b>01</b><p><strong>Run</strong> Start the local CLI demo and inspect the event sequence.</p></div>
+              <div><b>02</b><p><strong>Test</strong> Run the Python unit suite across the security boundary.</p></div>
+              <div><b>03</b><p><strong>Review</strong> Open this static documentation site from the GitHub Pages artifact.</p></div>
+              <div><b>04</b><p><strong>Extend</strong> Add one detector or adapter while preserving the same gate order.</p></div>
+            </div>
+          </section>
+
+          <section class="doc-section" id="demo">
+            <h2>Local demo</h2>
+            <p>The repository includes a synthetic end-to-end run. It shows member approval, capability issuance, local execution, receipt creation, and replay blocking without making network requests.</p>
+            <div class="command"><span>$</span> PYTHONPATH=src python3 -m members_only.cli demo</div>
+            <div class="demo-result"><code>first_execution=succeeded</code><code>replay_attempt=denied</code><code>network_requests=0</code></div>
+            <p class="section-note">Tests: <code>PYTHONPATH=src python3 -m unittest discover -s tests -v</code></p>
+          </section>
+
+          <section class="doc-section" id="boundaries">
+            <h2>Current boundaries</h2>
+            <ul class="boundary-list">
+              <li>Local synthetic actions are implemented. Real external messages, payments, and account changes are not.</li>
+              <li>Web MCP is intentionally excluded from this project scope.</li>
+              <li>Detectors are signals. They cannot guarantee that every sensitive value is found.</li>
+              <li>The member remains responsible for approving high-impact actions.</li>
+              <li>This documentation describes implementation evidence, not user adoption or commercial scale.</li>
+            </ul>
+          </section>
+        </article>
+      </main>
+
+      <aside class="page-nav" aria-label="On this page">
+        <p>On this page</p>
+        <a href="#system-overview">System overview</a>
+        <a href="#topology">Runtime topology</a>
+        <a href="#request-flow">Proposal flow</a>
+        <a href="#authority">Authority model</a>
+        <a href="#receipts">Traces and receipts</a>
+        <a href="#persistence">Persistence</a>
+        <a href="#delivery">Build and delivery</a>
+        <a href="#demo">Local demo</a>
+        <a href="#boundaries">Current boundaries</a>
+      </aside>
+    </div>
+    <script src="app.js"></script>
+  </body>
+</html>
