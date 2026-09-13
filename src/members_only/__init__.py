@@ -16,6 +16,8 @@ from .models import (
     SensitivityLevel,
 )
 from .policy import evaluate_proposal
+from .pipeline import MembersOnlyPipeline
+from .receipts import TraceEvent, TraceRecorder, create_receipt
 from .sensitivity import inspect_proposal
 from .storage import LocalStore
 
@@ -31,12 +33,16 @@ __all__ = [
     "Decision",
     "ExecutionStatus",
     "ExecutionGate",
+    "TraceEvent",
+    "TraceRecorder",
+    "create_receipt",
     "evaluate_proposal",
     "inspect_proposal",
     "PolicyDecision",
     "Proposal",
     "LocalStore",
     "LocalActionAdapter",
+    "MembersOnlyPipeline",
     "proposal_digest",
     "Receipt",
     "SensitivityFinding",

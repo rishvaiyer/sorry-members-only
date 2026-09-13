@@ -9,6 +9,9 @@ description = "Human-gated security controls for individual AI agents"
 requires-python = ">=3.11"
 dependencies = []
 
+[project.scripts]
+members-only = "members_only.cli:main"
+
 [tool.setuptools.packages.find]
 where = ["src"]
 
