@@ -33,7 +33,7 @@ class MembersOnlyPipeline:
     ) -> None:
         self.adapter = adapter or LocalActionAdapter()
         self.store = store or LocalStore()
-        self.capability_manager = capability_manager or CapabilityManager()
+        self.capability_manager = capability_manager or CapabilityManager(store=self.store)
         self.trace = trace or TraceRecorder()
         self.execution_gate = ExecutionGate(self.capability_manager, self.adapter)
 

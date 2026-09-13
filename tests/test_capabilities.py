@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 
 from members_only import (
     CapabilityManager,
+    LocalStore,
     approve_proposal,
     evaluate_proposal,
     inspect_proposal,
@@ -77,6 +78,19 @@ class CapabilityManagerTests(unittest.TestCase):
 
         with self.assertRaises(PermissionError):
             manager.redeem(expired, proposal)
+
+    def test_sqlite_redemption_state_blocks_replay_after_manager_restart(self):
+        proposal, approval = build_approved_proposal()
+
+        with LocalStore() as store:
+            first_manager = CapabilityManager(store=store)
+            capability = first_manager.issue(proposal, approval, ttl_seconds=60)
+            store.save_capability(capability)
+            first_manager.redeem(capability, proposal)
+
+            restarted_manager = CapabilityManager(store=store)
+            with self.assertRaises(PermissionError):
+                restarted_manager.redeem(capability, proposal)
 
 
 if __name__ == "__main__":
