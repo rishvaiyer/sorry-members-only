@@ -26,6 +26,23 @@ class CliDemoTests(unittest.TestCase):
         self.assertIn('"status": "denied"', text)
         self.assertNotIn("member-private-content", text)
 
+    def test_attack_demo_shows_fail_closed_scenarios(self):
+        output = io.StringIO()
+
+        with redirect_stdout(output):
+            exit_code = main(["attack-demo"])
+
+        text = output.getvalue()
+        self.assertEqual(exit_code, 0)
+        self.assertIn("Tampered proposal", text)
+        self.assertIn("Invalid machine attestation", text)
+        self.assertIn("Broker denial", text)
+        self.assertIn("Expired capability", text)
+        self.assertIn("One-use capability replay", text)
+        self.assertIn("Attack demo summary: 5/5 scenarios blocked or contained.", text)
+        self.assertNotIn("member-private-content", text)
+        self.assertNotIn("tampered-after-approval", text)
+
 
 if __name__ == "__main__":
     unittest.main()

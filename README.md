@@ -24,6 +24,14 @@ PYTHONPATH=src python3 -m members_only.cli demo
 
 The demo shows approval, capability issuance, sandbox verification, brokered local execution, receipt creation, and replay blocking. It makes no network requests.
 
+To run the fail-closed attack demonstrations:
+
+```bash
+PYTHONPATH=src python3 -m members_only.cli attack-demo
+```
+
+That demo shows tampered content, invalid machine attestation, broker denial, expired capability, and capability replay being blocked.
+
 ## Run the tests
 
 ```bash
