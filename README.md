@@ -10,6 +10,10 @@ The member is the person who owns the agent. The agent proposes an action, and M
 4. Runs a synthetic local action.
 5. Records a safe trace and receipt without printing the private payload.
 
+## Documentation
+
+[Open the architecture documentation](https://rishvaiyer.github.io/sorry-members-only/)
+
 ## Run the demo
 
 From the repository root:
