@@ -1,7 +1,7 @@
 """Human-gated security controls for individual AI agents."""
 
 from .approvals import approve_proposal, proposal_digest
-from .adapters import ActionAdapter, ActionResult, LocalActionAdapter
+from .adapters import ActionAdapter, ActionResult, LocalActionAdapter, ObscuraActionAdapter
 from .capabilities import CapabilityManager
 from .execution import ExecutionGate
 from .models import (
@@ -42,6 +42,7 @@ __all__ = [
     "Proposal",
     "LocalStore",
     "LocalActionAdapter",
+    "ObscuraActionAdapter",
     "MembersOnlyPipeline",
     "proposal_digest",
     "Receipt",

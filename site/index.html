@@ -52,7 +52,7 @@
               <div role="listitem"><strong>Policy gate</strong><span>→</span><p>Allow, requires approval, or deny</p></div>
               <div role="listitem"><strong>Member approval</strong><span>→</span><p>Decision bound to the exact proposal digest</p></div>
               <div role="listitem"><strong>Capability manager</strong><span>→</span><p>Short-lived, one-use permission for the approved proposal</p></div>
-              <div role="listitem"><strong>Local adapter</strong><span>→</span><p>Synthetic note and message actions, with external destinations rejected</p></div>
+              <div role="listitem"><strong>Action adapters</strong><span>→</span><p>Synthetic local actions plus an optional approved, read-only Obscura browser fetch</p></div>
               <div role="listitem"><strong>Trace and receipt</strong><span>→</span><p>Safe evidence of the decision and execution outcome</p></div>
             </div>
           </section>
@@ -64,12 +64,12 @@
               <tbody>
                 <tr><td>Agent caller</td><td>Suggest an action with typed context. It does not receive authority from its own output.</td><td><code>Proposal</code></td></tr>
                 <tr><td>Security layer</td><td>Inspect findings, apply policy, bind approval, and issue a capability.</td><td><code>pipeline.py</code></td></tr>
-                <tr><td>Local adapter</td><td>Run only the supported synthetic action after the final gate.</td><td><code>adapters/local.py</code></td></tr>
+                <tr><td>Action adapters</td><td>Run a supported local action or approved read-only browser fetch after the final gate.</td><td><code>adapters/</code></td></tr>
                 <tr><td>Persistence</td><td>Keep approvals, capabilities, redemption state, and receipts in local SQLite.</td><td><code>storage.py</code></td></tr>
                 <tr><td>Trace recorder</td><td>Write safe state transitions without raw payload-like fields.</td><td><code>receipts.py</code></td></tr>
               </tbody>
             </table>
-            <p class="section-note">The MVP is local and synthetic. It has no request-time network dependency and does not connect to Web MCP or external services.</p>
+            <p class="section-note">The default demo is local and synthetic. The optional Obscura adapter can make an approved read-only network fetch when its executable is configured.</p>
           </section>
 
           <section class="doc-section" id="request-flow">
@@ -155,12 +155,17 @@
             <div class="command"><span>$</span> PYTHONPATH=src python3 -m members_only.cli demo</div>
             <div class="demo-result"><code>first_execution=succeeded</code><code>replay_attempt=denied</code><code>network_requests=0</code></div>
             <p class="section-note">Tests: <code>PYTHONPATH=src python3 -m unittest discover -s tests -v</code></p>
+            <h3>Approved browser fetch</h3>
+            <p><code>ObscuraActionAdapter</code> uses the Obscura CLI for one bounded action: <code>browser_fetch</code>. Because its destination is external, the policy requires member approval before the capability can be issued.</p>
+            <div class="command"><span>$</span> MEMBERS_ONLY_OBSCURA_BIN=/path/to/obscura PYTHONPATH=src python3 -c 'from members_only.adapters import ObscuraActionAdapter; print(ObscuraActionAdapter().executable)'</div>
+            <p class="section-note">The repository has a live local fetch verification against <code>https://example.com</code>. It is not production deployment or proof of universal website compatibility.</p>
           </section>
 
           <section class="doc-section" id="boundaries">
             <h2>Current boundaries</h2>
             <ul class="boundary-list">
-              <li>Local synthetic actions are implemented. Real external messages, payments, and account changes are not.</li>
+              <li>Local synthetic actions and one read-only Obscura browser fetch are implemented. Real external messages, payments, account changes, and browser form writes are not.</li>
+              <li>Obscura is an optional external browser engine, not part of the Members Only authority model.</li>
               <li>Web MCP is intentionally excluded from this project scope.</li>
               <li>Detectors are signals. They cannot guarantee that every sensitive value is found.</li>
               <li>The member remains responsible for approving high-impact actions.</li>
