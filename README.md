@@ -1,35 +1,24 @@
 # Members Only
 
-Members Only is a small Python safety layer for individuals using AI agents.
+Members Only is a Python reference implementation for approving risky AI-agent
+actions before execution. It scans a proposed action, applies policy, issues a
+short-lived one-use capability, and records a redacted receipt.
 
-The member is the person who owns the agent. The agent proposes an action, and Members Only:
+```text
+proposal -> scan -> policy decision -> approval gate -> adapter -> receipt
+```
 
-1. Checks the proposal for sensitive content.
-2. Allows safe local actions, denies credential exposure, and pauses risky actions for member approval.
-3. Issues a short-lived, one-use capability.
-4. Runs a synthetic local action.
-5. Records a safe trace and receipt without printing the private payload.
+Safe local actions can pass, credential exposure is denied, and risky actions
+pause for approval.
 
-## Documentation
-
-[Open the architecture documentation](https://rishvaiyer.github.io/sorry-members-only/)
-
-## Run the demo
-
-From the repository root:
+## Run it
 
 ```bash
 PYTHONPATH=src python3 -m members_only.cli demo
-```
-
-The demo shows approval, capability issuance, local execution, receipt creation, and replay blocking. It makes no network requests.
-
-## Run the tests
-
-```bash
 PYTHONPATH=src python3 -m unittest discover -s tests -v
 ```
 
-## Current scope
+The adapter is simulated, and the demo makes no network requests. External
+integrations and automatic external actions are not included.
 
-This is a local Python MVP. Web MCP, real external integrations, and automatic external messages are not included.
+[Read the architecture documentation](https://rishvaiyer.github.io/sorry-members-only/)
